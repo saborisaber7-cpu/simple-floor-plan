@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>نقشه‌یار | طراحی پلان ساختمان</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">⌂</span><div><strong>نقشه‌یار</strong><small>طراحی سریع پلان ساختمان</small></div></div>
+      <div class="top-actions">
+        <button class="icon-btn" id="undoBtn" title="واگرد Ctrl+Z">↶</button>
+        <button class="icon-btn" id="redoBtn" title="از نو Ctrl+Y">↷</button>
+        <span class="divider"></span>
+        <button class="outline-btn" id="saveBtn">ذخیره پروژه</button>
+        <button class="primary-btn" id="exportBtn">خروجی SVG</button>
+      </div>
+    </header>
+    <main class="workspace">
+      <aside class="sidebar">
+        <div class="panel-heading"><div><span class="eyebrow">پروژه فعال</span><h1>پلان طبقه همکف</h1></div><button class="more-btn" title="گزینه‌های بیشتر">•••</button></div>
+        <section class="tool-section">
+          <h2>ابزارها</h2>
+          <div class="tool-grid">
+            <button class="tool active" data-tool="select"><span>↖</span><label>انتخاب</label><kbd>V</kbd></button>
+            <button class="tool" data-tool="wall"><span>╱</span><label>دیوار</label><kbd>W</kbd></button>
+            <button class="tool" data-tool="room"><span>▱</span><label>اتاق</label><kbd>R</kbd></button>
+            <button class="tool" data-tool="door"><span>⌞</span><label>در</label><kbd>D</kbd></button>
+            <button class="tool" data-tool="window"><span>▥</span><label>پنجره</label><kbd>N</kbd></button>
+            <button class="tool" data-tool="erase"><span>⌫</span><label>پاک‌کن</label><kbd>E</kbd></button>
+          </div>
+        </section>
+        <section class="settings-section">
+          <div class="section-title"><h2>تنظیمات نمایش</h2><span class="status-dot"></span></div>
+          <label class="field-label">مقیاس شبکه <output id="scaleValue">۵۰ سانتی‌متر</output></label>
+          <input type="range" id="gridScale" min="10" max="100" value="50" step="10">
+          <div class="range-meta"><span>۱۰ سانتی‌متر</span><span>۱ متر</span></div>
+          <label class="toggle-row"><span>نمایش شبکه</span><input type="checkbox" id="gridToggle" checked><i></i></label>
+          <label class="toggle-row"><span>چسبیدن به شبکه</span><input type="checkbox" id="snapToggle" checked><i></i></label>
+        </section>
+        <section class="info-section"><h2>راهنما</h2><p id="helpText">برای جابه‌جایی، روی عناصر کلیک کنید. با درگ روی فضای خالی، بوم را حرکت دهید.</p></section>
+        <div class="sidebar-footer"><button class="danger-btn" id="clearBtn">پاک‌سازی پلان</button><span>نسخه ۱.۰</span></div>
+      </aside>
+      <section class="canvas-area">
+        <div class="canvas-toolbar"><div class="breadcrumb"><span>پروژه‌ها</span><b>/</b><strong>طبقه همکف</strong></div><div class="zoom-controls"><button id="zoomOut" title="کوچک‌نمایی">−</button><span id="zoomLabel">۱۰۰٪</span><button id="zoomIn" title="بزرگ‌نمایی">+</button><button id="resetView" title="بازنشانی نما">⌖</button></div></div>
+        <div class="canvas-wrap" id="canvasWrap"><svg id="planSvg" xmlns="http://www.w3.org/2000/svg" aria-label="بوم طراحی پلان"><defs><pattern id="gridPattern" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M 50 0 L 0 0 0 50" fill="none" stroke="#d9e1e5" stroke-width="1"/><path d="M 10 0 L 0 0 0 10" fill="none" stroke="#eef1f2" stroke-width="1"/></pattern></defs><g id="viewport"><rect id="gridRect" x="-10000" y="-10000" width="20000" height="20000" fill="url(#gridPattern)"/><g id="objects"></g><g id="draft"></g></g></svg><div class="canvas-hint">برای حرکت، بوم را بکشید <span>•</span> چرخ غلتان برای بزرگ‌نمایی</div><div class="empty-state" id="emptyState"><div class="empty-icon">＋</div><strong>طراحی پلان را شروع کنید</strong><span>یک ابزار از نوار کناری انتخاب کنید</span></div></div>
+        <footer class="canvas-status"><span><i class="live"></i> آماده طراحی</span><span id="cursorPos">X: ۰  Y: ۰</span><span id="objectCount">۰ عنصر</span></footer>
+      </section>
+    </main>
+  </div>
+  <div class="modal-backdrop" id="confirmModal"><div class="modal"><h2>پاک‌سازی پلان؟</h2><p>همه عناصر این پروژه حذف می‌شوند. این عمل قابل بازگشت است.</p><div class="modal-actions"><button class="outline-btn" id="cancelClear">انصراف</button><button class="danger-solid" id="confirmClear">پاک‌سازی</button></div></div></div>
+  <script src="app.js"></script>
+</body>
+</html>
