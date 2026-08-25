@@ -1,24 +1,183 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>طراحی نقشه ساختمان</title>
-    <!-- اضافه کردن فونت فارسی -->
-    <link href="https://v1.fontapi.ir/css/Vazirmatn" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>طراحی نقشه ساختمان - خودکار و دستی</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="toolbar">
-        <button onclick="undo()">بازگشت</button>
-        <button onclick="changeZoom(0.1)">زوم +</button>
-        <button onclick="changeZoom(-0.1)">زوم -</button>
-        <button onclick="resetProject()" style="color: red;">پروژه جدید</button>
-        <button onclick="window.print()">چاپ نقشه</button>
-    </div>
-    <div id="canvas-container">
-        <svg id="main-svg" viewBox="0 0 1600 1100"></svg>
-    </div>
-    <script src="app.js"></script>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">⌂</div>
+        <div>
+          <strong>طراحی نقشه ساختمان</strong>
+          <small>طراحی خودکار پلان + ابزارهای دستی</small>
+        </div>
+      </div>
+
+      <div class="mode-switch" role="tablist" aria-label="حالت برنامه">
+        <button type="button" class="mode-tab is-active" data-mode="auto" id="modeAutoBtn">حالت ساده و خودکار</button>
+        <button type="button" class="mode-tab" data-mode="manual" id="modeManualBtn">حالت طراحی دستی</button>
+      </div>
+
+      <div class="top-actions">
+        <button type="button" class="icon-btn danger" id="newProjectBtn" title="نقشه جدید / پاک کردن">🗑</button>
+        <button type="button" class="icon-btn" id="undoBtn" title="واگرد (برگشت)">↶</button>
+        <button type="button" class="icon-btn" id="redoBtn" title="بازگرد">↷</button>
+        <button type="button" class="icon-btn" id="saveBtn" title="ذخیره">💾</button>
+        <button type="button" class="icon-btn" id="loadBtn" title="بارگذاری">📂</button>
+        <button type="button" class="icon-btn" id="printBtn" title="چاپ">🖨</button>
+        <button type="button" class="icon-btn" id="exportSvgBtn" title="خروجی SVG">⬇</button>
+        <input id="importFile" type="file" accept="application/json" hidden>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="panel control-panel">
+        <!-- پنل حالت خودکار -->
+        <div id="autoPanel" class="mode-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">حالت ساده</p>
+              <h1>ویزارد ساخت خودکار نقشه</h1>
+            </div>
+            <div class="chip" id="autoSummaryChip">مشخصات اولیه</div>
+          </div>
+
+          <div class="wizard">
+            <div class="wizard-steps" id="wizardSteps">
+              <button type="button" class="step is-active" data-step="0">۱</button>
+              <button type="button" class="step" data-step="1">۲</button>
+              <button type="button" class="step" data-step="2">۳</button>
+              <button type="button" class="step" data-step="3">۴</button>
+            </div>
+
+            <div class="wizard-stage" id="wizardStage"></div>
+            <div class="wizard-actions">
+              <button type="button" class="ghost-btn" id="wizardBackBtn">مرحله قبلی</button>
+              <button type="button" class="ghost-btn" id="wizardNextBtn">مرحله بعدی</button>
+              <button type="button" class="primary-btn" id="generateBtn">ساخت نقشه</button>
+            </div>
+          </div>
+
+          <div class="assistant-block">
+            <div class="subhead-row">
+              <h2>تغییرات سریع</h2>
+              <span class="muted">ویرایش سریع پلان</span>
+            </div>
+            <div class="quick-actions">
+              <button type="button" class="ghost-btn" data-action="swap-kitchen-living">جابجایی آشپزخانه و پذیرایی</button>
+              <button type="button" class="ghost-btn" data-action="add-bedroom">افزودن اتاق خواب</button>
+              <button type="button" class="ghost-btn" data-action="remove-balcony">حذف بالکن</button>
+              <button type="button" class="ghost-btn" data-action="bigger-living">بزرگ‌تر کردن پذیرایی</button>
+              <button type="button" class="ghost-btn" data-action="toggle-kitchen">آشپزخانه باز / بسته</button>
+              <button type="button" class="ghost-btn" data-action="add-bathroom">افزودن حمام/سرویس</button>
+            </div>
+
+            <div class="command-box">
+              <label for="commandInput">فرمان متنی (فارسی)</label>
+              <div class="command-row">
+                <input id="commandInput" type="text" placeholder="مثلاً: یک اتاق خواب اضافه کن" autocomplete="off">
+                <button type="button" class="primary-btn" id="sendCommandBtn">اعمال</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- پنل حالت دستی -->
+        <div id="manualPanel" class="mode-panel hidden">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">حالت حرفه‌ای</p>
+              <h1>ابزارهای ترسیم دستی</h1>
+            </div>
+            <div class="chip" id="manualHintChip">ابزار: انتخاب</div>
+          </div>
+
+          <div class="tool-grid">
+            <button type="button" class="tool-btn is-active" data-tool="select">انتخاب</button>
+            <button type="button" class="tool-btn" data-tool="room">افزودن اتاق</button>
+            <button type="button" class="tool-btn" data-tool="wall">ترسیم دیوار</button>
+            <button type="button" class="tool-btn" data-tool="door">در</button>
+            <button type="button" class="tool-btn" data-tool="window">پنجره</button>
+            <button type="button" class="tool-btn danger" data-tool="delete">حذف</button>
+          </div>
+
+          <div class="tool-grid narrow">
+            <button type="button" class="ghost-btn" data-preset="living">پذیرایی</button>
+            <button type="button" class="ghost-btn" data-preset="bedroom">اتاق خواب</button>
+            <button type="button" class="ghost-btn" data-preset="kitchen">آشپزخانه</button>
+            <button type="button" class="ghost-btn" data-preset="bathroom">حمام</button>
+          </div>
+
+          <div class="option-row">
+            <label class="toggle"><input id="gridToggle" type="checkbox" checked>شبکه</label>
+            <label class="toggle"><input id="snapToggle" type="checkbox" checked>چسبندگی</label>
+            
+            <div class="zoom-controls">
+              <button type="button" class="ghost-btn small" id="zoomOutBtn" title="کوچک‌نمایی">-</button>
+              <span class="zoom-readout" id="zoomReadout">100%</span>
+              <button type="button" class="ghost-btn small" id="zoomInBtn" title="بزرگ‌نمایی">+</button>
+              <button type="button" class="ghost-btn small" id="resetZoomBtn" title="اندازه پیش‌فرض">۱۰۰٪</button>
+            </div>
+          </div>
+
+          <div class="inspector" id="inspector">
+            <div class="subhead-row">
+              <h2>مشخصات مورد انتخابی</h2>
+              <span class="muted" id="selectionMeta">موردی انتخاب نشده</span>
+            </div>
+            <div class="inspector-grid" id="inspectorGrid">
+              <div class="empty-note">برای تغییر ابعاد یا نام، روی یکی از اتاق‌ها یا دیوارها کلیک کنید.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel canvas-panel">
+        <div class="panel-head compact">
+          <div>
+            <p class="eyebrow">پیش‌نمایش نقشه</p>
+            <h1 id="projectTitle">پروژه جدید</h1>
+          </div>
+          <div class="summary-strip" id="summaryStrip">
+            <span>۰ مترمربع</span>
+            <span>۰ اتاق</span>
+            <span>۰ دیوار</span>
+          </div>
+        </div>
+
+        <div class="canvas-wrap" id="canvasWrap">
+          <svg id="planSvg" viewBox="0 0 1600 1100" role="img" aria-label="نقشه ساختمان">
+            <defs id="svgDefs">
+              <pattern id="gridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(34,55,61,.08)" stroke-width="1"></path>
+              </pattern>
+              <marker id="arrowHead" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                <path d="M0,0 L7,3 L0,6 z" fill="currentColor"></path>
+              </marker>
+            </defs>
+            <rect id="gridLayer" x="0" y="0" width="1600" height="1100" fill="url(#gridPattern)"></rect>
+            <g id="sceneLayer" class="scene-root"></g>
+            <g id="overlayLayer"></g>
+          </svg>
+          <div class="canvas-empty hidden" id="canvasEmpty">
+            <strong>پلان خالی است</strong>
+            <span>از مراحل ویزارد برای ساخت نقشه استفاده کنید یا با ابزارها رسم کنید.</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <section class="print-sheet" aria-hidden="true">
+      <div class="print-title" id="printTitle">طراحی نقشه ساختمان</div>
+      <div class="print-summary" id="printSummary">-</div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
