@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>طراحی پلان ساختمان</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">⌂</div>
+        <div>
+          <strong>طراحی نقشه ساختمان</strong>
+          <small>طراحی خودکار پلان و ابزارهای دستی</small>
+        </div>
+      </div>
+
+      <div class="mode-switch" role="tablist">
+        <button type="button" class="mode-tab is-active" id="modeAutoBtn">حالت ساده و خودکار</button>
+        <button type="button" class="mode-tab" id="modeManualBtn">حالت طراحی دستی</button>
+      </div>
+
+      <div class="top-actions">
+        <button type="button" class="action-btn danger" id="newProjectBtn" title="پاک کردن و شروع نقشه جدید">پروژه جدید</button>
+        <button type="button" class="action-btn" id="undoBtn" title="واگرد">↶ برگشت</button>
+        <button type="button" class="action-btn" id="printBtn" title="چاپ یا ذخیره PDF">🖨 چاپ</button>
+        <button type="button" class="action-btn" id="exportSvgBtn" title="خروجی فایل نقشه">⬇ خروجی SVG</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <!-- پنل کنترل سمت راست -->
+      <section class="panel control-panel">
+        <!-- حالت ساده / خودکار -->
+        <div id="autoPanel" class="mode-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">مرحله‌به‌مرحله</p>
+              <h1>مشخصات ساختمان</h1>
+            </div>
+          </div>
+
+          <div class="wizard">
+            <div class="field">
+              <label>ابعاد زمین یا واحد (متر):</label>
+              <div class="inline-row">
+                <input type="number" id="plotWidth" value="10" min="4" max="50" placeholder="عرض (متر)">
+                <input type="number" id="plotHeight" value="12" min="4" max="50" placeholder="طول (متر)">
+              </div>
+            </div>
+
+            <div class="field">
+              <label>تعداد اتاق خواب:</label>
+              <select id="bedCount">
+                <option value="1">۱ خوابه</option>
+                <option value="2" selected>۲ خوابه</option>
+                <option value="3">۳ خوابه</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>مدل آشپزخانه:</label>
+              <select id="kitchenType">
+                <option value="open" selected>آشپزخانه باز (اوپن / جزیره)</option>
+                <option value="closed">آشپزخانه بسته / مطبخ</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label class="toggle-label">
+                <input type="checkbox" id="hasBalcony" checked>
+                دارای بالکن / تراس
+              </label>
+            </div>
+
+            <button type="button" class="primary-btn full" id="generateBtn">ساخت نقشه خودکار</button>
+          </div>
+
+          <div class="quick-tools">
+            <p class="eyebrow">تغییرات سریع پلان</p>
+            <div class="quick-grid">
+              <button type="button" class="ghost-btn" data-quick="add-bed">+ یک اتاق خواب</button>
+              <button type="button" class="ghost-btn" data-quick="del-balcony">- حذف بالکن</button>
+              <button type="button" class="ghost-btn" data-quick="swap">جابجایی فضاها</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- حالت دستی -->
+        <div id="manualPanel" class="mode-panel hidden">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">ابزارها</p>
+              <h1>طراحی و ترسیم دستی</h1>
+            </div>
+          </div>
+
+          <div class="tool-grid">
+            <button type="button" class="tool-btn is-active" data-tool="select">انتخاب / جابجایی</button>
+            <button type="button" class="tool-btn" data-tool="room">افزودن اتاق</button>
+            <button type="button" class="tool-btn" data-tool="wall">رسم دیوار</button>
+            <button type="button" class="tool-btn" data-tool="door">در</button>
+            <button type="button" class="tool-btn" data-tool="window">پنجره</button>
+            <button type="button" class="tool-btn danger" id="deleteItemBtn">حذف انتخاب‌شده</button>
+          </div>
+
+          <div class="presets-block">
+            <p class="eyebrow">افزودن سریع اتاق آماده:</p>
+            <div class="quick-grid">
+              <button type="button" class="ghost-btn" data-preset="living">پذیرایی</button>
+              <button type="button" class="ghost-btn" data-preset="bedroom">اتاق خواب</button>
+              <button type="button" class="ghost-btn" data-preset="kitchen">آشپزخانه</button>
+              <button type="button" class="ghost-btn" data-preset="bath">حمام و سرویس</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- بخش نمایش نقشه و بوم SVG -->
+      <section class="panel canvas-panel">
+        <div class="canvas-header">
+          <div class="canvas-title">
+            <span class="dot"></span>
+            <strong>صفحه نقشه</strong>
+          </div>
+
+          <!-- ابزارهای زوم -->
+          <div class="zoom-toolbar">
+            <button type="button" class="zoom-btn" id="zoomOutBtn" title="کوچک‌نمایی">Zoom -</button>
+            <span class="zoom-text" id="zoomLevelText">100%</span>
+            <button type="button" class="zoom-btn" id="zoomInBtn" title="بزرگ‌نمایی">Zoom +</button>
+            <button type="button" class="zoom-btn reset" id="zoomResetBtn" title="اندازه اولیه">۱۰۰٪</button>
+          </div>
+        </div>
+
+        <div class="canvas-wrap" id="canvasWrap">
+          <svg id="planSvg" viewBox="0 0 1200 800">
+            <defs>
+              <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+            <!-- گروه اصلی که زوم روی آن اعمال می‌شود -->
+            <g id="viewportGroup" transform="scale(1)">
+              <g id="roomsGroup"></g>
+              <g id="wallsGroup"></g>
+              <g id="openingsGroup"></g>
+            </g>
+          </svg>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
