@@ -1270,3 +1270,37 @@
 
   init();
 })();
+// --- بخش جدید اضافه شده ---
+let currentZoom = 1.0;
+
+function changeZoom(delta) {
+    currentZoom = Math.max(0.5, Math.min(2.0, currentZoom + delta));
+    const svgElement = document.getElementById('main-svg');
+    if (svgElement) {
+        svgElement.style.transform = `scale(${currentZoom})`;
+    }
+}
+
+function resetProject() {
+    if (confirm("آیا مطمئن هستید؟ تمام تغییرات پاک خواهد شد.")) {
+        // بازنشانی وضعیت
+        state.draft = { walls: [], rooms: [], openings: [] };
+        // پاک کردن از حافظه
+        localStorage.removeItem('building-floorplan-webapp-v2');
+        // تنظیم مجدد زوم
+        currentZoom = 1.0;
+        document.getElementById('main-svg').style.transform = `scale(1)`;
+        // رندر مجدد
+        render();
+    }
+}
+
+function undo() {
+    // تابع undo که در کد فعلی دارید را فراخوانی می‌کند
+    // اگر تابع undo ندارید، این بخش را طبق کد قبلی خود تنظیم کنید
+    if (typeof historyStack !== 'undefined' && historyStack.length > 0) {
+        restore(historyStack.pop());
+        render();
+    }
+}
+// --- پایان بخش جدید ---
