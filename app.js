@@ -1,10 +1,10 @@
 // وضعیت کلی اپلیکیشن
 const state = {
-  viewMode: '2d', // '2d' یا '3d'
+  viewMode: '2d',
   zoom: 1,
   selectedId: null,
   floors: 3,
-  structureType: 'concrete', // 'concrete' یا 'steel'
+  structureType: 'concrete',
   smartColumns: true,
   hideWithCabinets: true,
   plotW: 10,
@@ -106,14 +106,10 @@ function generateAutoPlan() {
   const newRooms = [];
   const livingHeight = h * 0.55;
 
-  // ۱. سالن پذیرایی
   newRooms.push({ id: 1, name: 'پذیرایی و نشیمن', x: startX, y: startY, width: w * 0.65, height: livingHeight });
-  // ۲. آشپزخانه
   newRooms.push({ id: 2, name: 'آشپزخانه', x: startX + (w * 0.65), y: startY, width: w * 0.35, height: livingHeight * 0.65 });
-  // ۳. سرویس
   newRooms.push({ id: 3, name: 'حمام و سرویس', x: startX + (w * 0.65), y: startY + (livingHeight * 0.65), width: w * 0.35, height: livingHeight * 0.35 });
 
-  // ۴. اتاق خواب‌ها
   const bedWidth = w / beds;
   const bedHeight = h - livingHeight;
   for (let i = 0; i < beds; i++) {
@@ -127,7 +123,6 @@ function generateAutoPlan() {
     });
   }
 
-  // بالکن
   if (hasBalcony) {
     newRooms.push({ id: 99, name: 'بالکن', x: startX + w - 50, y: startY + livingHeight, width: 50, height: bedHeight });
   }
@@ -140,7 +135,7 @@ function generateAutoPlan() {
 
 document.getElementById('generateBtn').onclick = generateAutoPlan;
 
-// ۵. الگوریتم ستون‌گذاری هوشمند
+// ۵. الگوریتم ستون‌گذاری
 function generateStructuralColumns() {
   state.columns = [];
   if (!state.smartColumns) return;
@@ -149,7 +144,6 @@ function generateStructuralColumns() {
   const points = new Set();
 
   state.rooms.forEach(r => {
-    // ۴ گوشه هر اتاق
     const corners = [
       `${r.x},${r.y}`,
       `${r.x + r.width},${r.y}`,
@@ -165,7 +159,7 @@ function generateStructuralColumns() {
   });
 }
 
-// ۶. رندر پلان ۲بعدی در SVG
+// ۶. رندر پلان ۲بعدی
 function renderPlan2D() {
   roomsGroup.innerHTML = '';
   columnsGroup.innerHTML = '';
@@ -194,7 +188,6 @@ function renderPlan2D() {
     subtext.setAttribute('class', 'room-subtext');
     subtext.textContent = `${Math.round((room.width * room.height) / 1600)} م.م`;
 
-    // کمد یا کابینت مخفی‌کننده ستون
     if (state.hideWithCabinets && (room.name.includes('خواب') || room.name.includes('آشپزخانه'))) {
       const cab = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       cab.setAttribute('x', room.x + 2);
@@ -202,11 +195,15 @@ function renderPlan2D() {
       cab.setAttribute('width', room.name.includes('خواب') ? 25 : 30);
       cab.setAttribute('height', room.height - 4);
       cab.setAttribute('class', 'cabinet-rect');
-      furnitureGroup.appendChild(cabx', col.x);
-    rect.setAttribute('y', col.y);
-    rect.setAttribute('width', col.size);
-    rect.setAttribute('height', col.size);
-    rect.setAttribute(' ۲بعدی
+      furnitureGroup.appendChild(cab);
+    }
+
+    g.appendChild(rect);
+    g.appendChild(text);
+    g.appendChild(subtext);
+    roomsGroup.appendChild(g);
+  });
+
   state.columns.forEach(col => {
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     rect.setAttribute('x', col.x);
@@ -218,7 +215,7 @@ function renderPlan2D() {
   });
 }
 
-// ۷. موتور شبیه‌ساز سه‌بعدی (Three.js 3D Skeleton Engine)
+// ۷. موتور سه‌بعدی Three.js
 let scene, camera, renderer, controls, skeletonGroup;
 
 function init3D() {
@@ -232,15 +229,12 @@ function init3D() {
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.shadowMap.enabled = true;
   container.appendChild(renderer.domElement);
 
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
-  controls.maxPolarAngle = Math.PI / 2 + 0.1; // امکان دید از زاویه زمین و بالا
 
-  // نورپردازی استودیویی مهندسی
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
   scene.add(ambientLight);
 
@@ -248,7 +242,6 @@ function init3D() {
   dirLight.position.set(400, 800, 500);
   scene.add(dirLight);
 
-  // گرید کف زمین
   const gridHelper = new THREE.GridHelper(1400, 30, 0x1e293b, 0x0f172a);
   gridHelper.position.y = -2;
   scene.add(gridHelper);
@@ -256,7 +249,6 @@ function init3D() {
   skeletonGroup = new THREE.Group();
   scene.add(skeletonGroup);
 
-  // دکمه بازنشانی زاویه دید
   document.getElementById('resetCameraBtn').onclick = () => {
     camera.position.set(600, 700, 800);
     controls.target.set(0, (state.floors * 60) / 2, 0);
@@ -280,21 +272,17 @@ function animate() {
   if (renderer && scene && camera) renderer.render(scene, camera);
 }
 
-// ساخت و به‌روزرسانی اسکلت سه‌بعدی تمام طبقات
 function update3DScene() {
   if (!skeletonGroup) return;
 
-  // پاک کردن مدل‌های قبلی
   while (skeletonGroup.children.length > 0) {
-    const obj = skeletonGroup.children[0];
-    skeletonGroup.remove(obj);
+    skeletonGroup.remove(skeletonGroup.children[0]);
   }
 
   const isConcrete = state.structureType === 'concrete';
-  const floorHeight = 70; // ارتفاع هر طبقه در مقیاس سه‌بعدی
+  const floorHeight = 70;
   const colThickness = isConcrete ? 10 : 5;
 
-  // متریال ستون و تیرها
   const colMaterial = new THREE.MeshStandardMaterial({
     color: isConcrete ? 0x94a3b8 : 0xe11d48,
     metalness: isConcrete ? 0.1 : 0.8,
@@ -304,8 +292,7 @@ function update3DScene() {
   const slabMaterial = new THREE.MeshStandardMaterial({
     color: 0x334155,
     transparent: true,
-    opacity: 0.35,
-    wireframe: false
+    opacity: 0.35
   });
 
   const beamMaterial = new THREE.MeshStandardMaterial({
@@ -313,22 +300,18 @@ function update3DScene() {
     metalness: isConcrete ? 0.1 : 0.7
   });
 
-  // محاسبه مرکز برای وسط‌چین کردن سازه در صفحه ۳بعدی
   const centerX = 600;
   const centerZ = 400;
 
-  // حلقه ساخت طبقات (از طبقه ۱ تا N)
   for (let f = 0; f < state.floors; f++) {
     const currentY = f * floorHeight;
 
-    // ۱. دال سقف هر طبقه (Slab)
     state.rooms.forEach(r => {
       const slabGeo = new THREE.BoxGeometry(r.width, 3, r.height);
       const slabMesh = new THREE.Mesh(slabGeo, slabMaterial);
       slabMesh.position.set((r.x + r.width / 2) - centerX, currentY + floorHeight, (r.y + r.height / 2) - centerZ);
       skeletonGroup.add(slabMesh);
 
-      // رسم تیرهای دور هر اتاق (Beams)
       const beamGeoX = new THREE.BoxGeometry(r.width, colThickness * 0.8, colThickness * 0.8);
       const beamMesh1 = new THREE.Mesh(beamGeoX, beamMaterial);
       beamMesh1.position.set((r.x + r.width / 2) - centerX, currentY + floorHeight, r.y - centerZ);
@@ -339,7 +322,6 @@ function update3DScene() {
       skeletonGroup.add(beamMesh2);
     });
 
-    // ۲. ستون‌های عمودی سازه (Columns)
     state.columns.forEach(col => {
       const colGeo = new THREE.BoxGeometry(colThickness, floorHeight, colThickness);
       const colMesh = new THREE.Mesh(colGeo, colMaterial);
@@ -348,7 +330,6 @@ function update3DScene() {
     });
   }
 
-  // تنظیم مرکز دید دوربین
   if (controls) {
     controls.target.set(0, (state.floors * floorHeight) / 2, 0);
   }
@@ -383,6 +364,23 @@ view3dBtn.onclick = () => {
   }, 50);
 };
 
+// ابزارهای سریع
+document.querySelectorAll('[data-quick]').forEach(btn => {
+  btn.onclick = () => {
+    saveHistory();
+    const action = btn.getAttribute('data-quick');
+    if (action === 'add-bed') {
+      const id = Date.now();
+      state.rooms.push({ id, name: 'اتاق جدید', x: 400, y: 300, width: 140, height: 120 });
+    } else if (action === 'del-balcony') {
+      state.rooms = state.rooms.filter(r => r.name !== 'بالکن');
+    }
+    generateStructuralColumns();
+    renderPlan2D();
+    if (state.viewMode === '3d') update3DScene();
+  };
+});
+
 // خروجی چاپ و SVG
 document.getElementById('printBtn').onclick = () => window.print();
 document.getElementById('exportSvgBtn').onclick = () => {
@@ -395,5 +393,5 @@ document.getElementById('exportSvgBtn').onclick = () => {
   a.click();
 };
 
-// راه‌اندازی اولیه
+// شروع اولیه
 generateAutoPlan();
