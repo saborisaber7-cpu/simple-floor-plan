@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>طراح نقشه ساختمان | پلان ۲بعدی و شبیه‌ساز ۳بعدی</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-icon">📐</span>
+    <div>
+      <h1>طراح پلان ساختمان</h1>
+      <p class="brand-sub">نسخه حرفه‌ای — نقشه ۲بعدی + شبیه‌ساز ۳بعدی اسکلت</p>
+    </div>
+  </div>
+  <div class="view-toggle" role="tablist">
+    <button id="btn2d" class="toggle-btn active" role="tab">🏠 پلان ۲ بعدی</button>
+    <button id="btn3d" class="toggle-btn" role="tab">🏢 نمای ۳ بعدی اسکلت و طبقات</button>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- ====== بوم نقشه ====== -->
+  <section class="canvas-area">
+    <div id="canvas2d" class="canvas-view active">
+      <svg id="planSvg" xmlns="http://www.w3.org/2000/svg" aria-label="پلان ساختمان"></svg>
+      <div class="zoom-controls">
+        <button id="zoomIn" title="بزرگ‌نمایی">＋</button>
+        <button id="zoomOut" title="کوچک‌نمایی">－</button>
+        <button id="zoomReset" title="بازنشانی به مرکز">⌖</button>
+        <button id="zoomFit" title="تناسب با صفحه">⛶</button>
+      </div>
+      <div class="canvas-hint">برای جابه‌جایی بکشید • با اسکرول از مرکز زوم کنید</div>
+    </div>
+    <div id="canvas3d" class="canvas-view">
+      <div id="threeContainer"></div>
+      <div class="canvas-hint">چرخش: درگ • زوم: اسکرول • جابه‌جایی: کلیک راست</div>
+    </div>
+    <div class="statusbar">
+      <span class="badge" id="statusZoom">زوم: ۱۰۰٪</span>
+      <span class="badge badge-green" id="statusArea">مساحت: —</span>
+      <span class="badge badge-blue" id="statusRooms">اتاق‌ها: —</span>
+    </div>
+  </section>
+
+  <!-- ====== پنل کنترل ====== -->
+  <aside class="side-panel">
+    <!-- کارت ۱ -->
+    <div class="card">
+      <div class="card-head"><span class="card-icon">📏</span><h2>ابعاد و مشخصات کلی</h2></div>
+      <div class="card-body grid2">
+        <label>عرض زمین (متر)<input type="number" id="inWidth" value="15" min="6" max="60" step="0.5"></label>
+        <label>طول زمین (متر)<input type="number" id="inLength" value="12" min="6" max="60" step="0.5"></label>
+        <label>تعداد خواب<select id="inBedrooms"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label>
+        <label>تعداد طبقات<input type="number" id="inFloors" value="2" min="1" max="5"></label>
+      </div>
+    </div>
+
+    <!-- کارت ۲ -->
+    <div class="card">
+      <div class="card-head"><span class="card-icon">🏗️</span><h2>سازه و ستون‌گذاری</h2></div>
+      <div class="card-body">
+        <div class="seg-group" id="structureType">
+          <button class="seg active" data-val="concrete">بتنی</button>
+          <button class="seg" data-val="steel">فلزی</button>
+        </div>
+        <label class="check"><input type="checkbox" id="smartColumns" checked> ستون‌گذاری هوشمند در گوشه‌ها و تقاطع دیوارها</label>
+        <label class="check"><input type="checkbox" id="showDims" checked> نمایش ابعاد و متراژ اتاق‌ها</label>
+        <span class="badge badge-amber" id="structInfo">ستون‌ها: —</span>
+      </div>
+    </div>
+
+    <!-- کارت ۳ : اجرا -->
+    <div class="card card-cta">
+      <button id="btnRun" class="btn-run">🚀 اجرای طراحی و تولید پلان</button>
+    </div>
+
+    <!-- کارت ۴ -->
+    <div class="card">
+      <div class="card-head"><span class="card-icon">🧰</span><h2>ویرایش سریع و ابزارها</h2></div>
+      <div class="card-body grid2">
+        <button class="btn btn-soft" id="btnAddRoom">➕ افزودن اتاق</button>
+        <button class="btn btn-soft" id="btnDelBalcony">🗑️ حذف بالکن</button>
+        <button class="btn btn-soft" id="btnExport">💾 خروجی SVG</button>
+        <button class="btn btn-soft" id="btnPrint">🖨️ چاپ پلان</button>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
