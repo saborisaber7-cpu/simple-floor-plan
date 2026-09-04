@@ -1,14 +1,15 @@
 :root {
-  --bg: #f3f6f6;
-  --panel: #ffffff;
-  --ink: #1e293b;
-  --muted: #64748b;
-  --line: #e2e8f0;
-  --accent: #0f766e;
-  --accent-light: #ccfbf1;
-  --danger: #dc2626;
-  --danger-light: #fee2e2;
-  --shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --ink: #f8fafc;
+  --muted: #94a3b8;
+  --line: #334155;
+  --accent: #0ea5e9;
+  --accent-light: rgba(14, 165, 233, 0.15);
+  --danger: #ef4444;
+  --danger-light: rgba(239, 68, 68, 0.15);
+  --concrete: #94a3b8;
+  --steel: #e11d48;
 }
 
 * {
@@ -35,7 +36,7 @@ body {
 .topbar {
   background: var(--panel);
   border-bottom: 1px solid var(--line);
-  padding: 10px 18px;
+  padding: 10px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -46,18 +47,18 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .brand-mark {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   background: var(--accent);
   color: #fff;
-  border-radius: 8px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
-  font-size: 20px;
+  font-size: 22px;
 }
 
 .brand strong {
@@ -72,15 +73,16 @@ body {
 
 .mode-switch {
   display: flex;
-  background: #e2e8f0;
+  background: #0f172a;
   padding: 4px;
   border-radius: 10px;
-  gap: 4px;
+  gap: 6px;
+  border: 1px solid var(--line);
 }
 
 .mode-tab {
   border: 0;
-  padding: 8px 16px;
+  padding: 8px 18px;
   border-radius: 8px;
   background: transparent;
   color: var(--muted);
@@ -91,9 +93,9 @@ body {
 }
 
 .mode-tab.is-active {
-  background: #fff;
-  color: var(--accent);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4);
 }
 
 .top-actions {
@@ -103,35 +105,34 @@ body {
 
 .action-btn {
   border: 1px solid var(--line);
-  background: #fff;
+  background: #334155;
+  color: #fff;
   padding: 7px 12px;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .action-btn:hover {
-  background: #f8fafc;
+  background: #475569;
 }
 
 .action-btn.danger {
-  color: var(--danger);
-  border-color: #fca5a5;
-  background: #fff;
+  color: #fca5a5;
+  border-color: var(--danger);
+  background: var(--danger-light);
 }
 
 .action-btn.danger:hover {
-  background: var(--danger-light);
+  background: var(--danger);
+  color: #fff;
 }
 
 .workspace {
   flex: 1;
   display: grid;
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: 360px 1fr;
   gap: 16px;
   padding: 16px;
   height: calc(100vh - 64px);
@@ -142,7 +143,6 @@ body {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 12px;
-  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
 }
@@ -156,7 +156,6 @@ body {
   font-size: 11px;
   color: var(--accent);
   font-weight: 800;
-  margin-bottom: 2px;
 }
 
 .panel-head h1 {
@@ -167,7 +166,7 @@ body {
 .wizard {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .field {
@@ -179,13 +178,40 @@ body {
 .field label {
   font-size: 12px;
   font-weight: 700;
-  color: var(--ink);
+}
+
+.highlight-box {
+  background: rgba(15, 23, 42, 0.6);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider-row input[type="range"] {
+  flex: 1;
+}
+
+.badge {
+  background: var(--accent);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: bold;
 }
 
 input, select {
   width: 100%;
   padding: 8px 10px;
+  background: #0f172a;
   border: 1px solid var(--line);
+  color: #fff;
   border-radius: 8px;
   font-size: 13px;
   outline: none;
@@ -205,6 +231,7 @@ input:focus, select:focus {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -217,7 +244,7 @@ input:focus, select:focus {
   background: var(--accent);
   color: #fff;
   border: 0;
-  padding: 10px;
+  padding: 12px;
   border-radius: 8px;
   font-weight: 700;
   font-size: 13px;
@@ -226,10 +253,10 @@ input:focus, select:focus {
 }
 
 .primary-btn:hover {
-  filter: brightness(0.95);
+  filter: brightness(1.1);
 }
 
-.quick-tools, .presets-block {
+.quick-tools {
   margin-top: 18px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
@@ -244,7 +271,8 @@ input:focus, select:focus {
 
 .ghost-btn {
   border: 1px solid var(--line);
-  background: #fff;
+  background: #0f172a;
+  color: #fff;
   padding: 7px 8px;
   border-radius: 8px;
   font-size: 12px;
@@ -252,39 +280,14 @@ input:focus, select:focus {
 }
 
 .ghost-btn:hover {
-  background: #f1f5f9;
-}
-
-.tool-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.tool-btn {
-  border: 1px solid var(--line);
-  background: #fff;
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.tool-btn.is-active {
-  background: var(--accent-light);
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.tool-btn.danger {
-  color: var(--danger);
+  background: #334155;
 }
 
 .canvas-panel {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
 }
 
 .canvas-header {
@@ -293,7 +296,7 @@ input:focus, select:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fafafa;
+  background: #1e293b;
 }
 
 .canvas-title {
@@ -316,9 +319,16 @@ input:focus, select:focus {
   gap: 6px;
 }
 
+.muted-text {
+  color: var(--muted);
+  font-size: 11px;
+  margin-left: 8px;
+}
+
 .zoom-btn {
   border: 1px solid var(--line);
-  background: #fff;
+  background: #0f172a;
+  color: #fff;
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 12px;
@@ -327,7 +337,7 @@ input:focus, select:focus {
 }
 
 .zoom-btn:hover {
-  background: #f1f5f9;
+  background: #334155;
 }
 
 .zoom-text {
@@ -342,24 +352,24 @@ input:focus, select:focus {
   flex: 1;
   overflow: hidden;
   position: relative;
-  background: #f8fafc;
+  background: #090d16;
   display: grid;
   place-items: center;
+}
+
+#threeContainer {
+  width: 100%;
+  height: 100%;
 }
 
 svg {
   width: 100%;
   height: 100%;
-  cursor: grab;
-}
-
-svg:active {
-  cursor: grabbing;
 }
 
 .room-rect {
-  fill: rgba(204, 251, 241, 0.4);
-  stroke: #0f766e;
+  fill: rgba(14, 165, 233, 0.08);
+  stroke: #0ea5e9;
   stroke-width: 2;
   cursor: pointer;
 }
@@ -367,33 +377,40 @@ svg:active {
 .room-rect.selected {
   stroke: #f59e0b;
   stroke-width: 3;
-  fill: rgba(254, 243, 199, 0.5);
+  fill: rgba(245, 158, 11, 0.15);
 }
 
 .room-text {
   font-size: 14px;
   font-weight: bold;
-  fill: #0f172a;
+  fill: #f8fafc;
   text-anchor: middle;
   pointer-events: none;
 }
 
 .room-subtext {
   font-size: 11px;
-  fill: #64748b;
+  fill: #94a3b8;
   text-anchor: middle;
   pointer-events: none;
 }
 
-.wall-line {
-  stroke: #1e293b;
-  stroke-width: 6;
-  stroke-linecap: round;
+/* ستون‌های ۲ بعدی */
+.column-rect {
+  fill: #64748b;
+  stroke: #cbd5e1;
+  stroke-width: 1;
 }
 
-.door-shape {
-  stroke: #b45309;
-  stroke-width: 4;
+.column-rect.steel {
+  fill: #be123c;
+  stroke: #fda4af;
+}
+
+.cabinet-rect {
+  fill: rgba(217, 119, 6, 0.3);
+  stroke: #d97706;
+  stroke-dasharray: 4;
 }
 
 .hidden {
@@ -408,7 +425,6 @@ svg:active {
   .workspace {
     grid-template-columns: 1fr;
     height: auto;
-    overflow: visible;
   }
   .canvas-wrap {
     min-height: 480px;
