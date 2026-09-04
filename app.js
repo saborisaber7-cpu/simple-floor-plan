@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadStorageBtn = document.getElementById('load-storage-btn');
 
     const SVG_NS = "http://www.w3.org/2000/svg";
-    const RENDER_SCALE = 50; // pixels per meter
+    const RENDER_SCALE = 50; 
 
     // --- Application State ---
     let state = {
@@ -43,26 +43,24 @@ document.addEventListener('DOMContentLoaded', () => {
         hasBalcony: false,
         pan: { x: 0, y: 0, active: false, start: { x: 0, y: 0 } },
         zoom: 1,
-        tool: 'pan', // 'pan' or 'draw'
+        tool: 'pan',
         drawing: { active: false, start: {x: 0, y: 0}, end: {x: 0, y: 0}, tempLine: null }
     };
 
-    // --- History (Undo/Redo) State ---
     let history = [];
     let historyIndex = -1;
-
-
-    // --- 3D Scene (Three.js) ---
     let scene, camera, renderer, controls;
 
     // --- Core Functions ---
-
     function generateFloorplan() {
-        captureHistory();
-        state.groundWidth = parseFloat(groundWidthInput.value);
-        state.groundLength = parseFloat(groundLengthInput.value);
-        state.bedrooms = parseInt(bedroomsInput.value);
-        state.floors = parseInt(floorsInput.value);
+        // Reset pan & zoom for new plans
+        state.pan = { x: 0, y: 0, active: false, start: { x: 0, y: 0 } };
+        state.zoom = 1;
+
+        state.groundWidth = parseFloat(groundWidthInput.value) || 10;
+        state.groundLength = parseFloat(groundLengthInput.value) || 25;
+        state.bedrooms = parseInt(bedroomsInput.value) || 2;
+        state.floors = parseInt(floorsInput.value) || 1;
         state.structureType = structureTypeInput.value;
         state.autoColumns = autoColumnsCheckbox.checked;
 
@@ -72,6 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             state.columns = [];
         }
+        
+        captureHistory();
         render();
     }
 
@@ -83,14 +83,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const w = state.groundWidth;
         const l = state.groundLength;
 
-        // 1. Living Room & Kitchen (پذیرایی و آشپزخانه)
-        const livingRatio = 0.4; // 40% of length for living area
+        const livingRatio = 0.4;
         const livingLength = l * livingRatio;
         state.rooms.push({ name: 'پذیرایی', x: 0, y: 0, width: w, height: livingLength, type: 'living' });
         state.rooms.push({ name: 'آشپزخانه', x: 0, y: livingLength, width: w / 2, height: 3, type: 'kitchen' });
 
-        // 2. Bathroom & WC (حمام و سرویس بهداشتی)
-        // Fixed coordinates to prevent overlap
         const serviceY = livingLength;
         const serviceWidth = 2;
         const wcHeight = 2;
@@ -98,11 +95,10 @@ document.addEventListener('DOMContentLoaded', () => {
         state.rooms.push({ name: 'سرویس', x: w - serviceWidth, y: serviceY, width: serviceWidth, height: wcHeight, type: 'wc' });
         state.rooms.push({ name: 'حمام', x: w - serviceWidth, y: serviceY + wcHeight, width: serviceWidth, height: bathHeight, type: 'bath' });
 
-
-        // 3. Bedrooms (اتاق خواب‌ها)
-        const bedroomsAreaY = livingLength + Math.max(3, wcHeight + bathHeight); // Start after kitchen/services
-        const remainingLength = l - bedroomsAreaY;
+        const bedroomsAreaY = livingLength + Math.max(3, wcHeight + bathHeight); 
+        const remainingLength = Math.max(0, l - bedroomsAreaY);
         const bedroomWidth = (w / state.bedrooms);
+        
         for (let i = 0; i < state.bedrooms; i++) {
             state.rooms.push({
                 name: `خواب ${i + 1}`,
@@ -114,45 +110,44 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        // 4. Entrance Door (درب ورودی)
-        state.rooms.push({ name: 'ورودی', x: w - 1.2, y: 0, width: 1.2, height: 0, type: 'door' }); // Use height=0 for door marker
+        state.rooms.push({ name: 'ورودی', x: w - 1.2, y: 0, width: 1.2, height: 0, type: 'door' });
 
         extractWallsFromRooms();
     }
     
     function addBalcony() {
         if(state.hasBalcony) return;
-        captureHistory();
         state.hasBalcony = true;
         const livingRoom = state.rooms.find(r => r.type === 'living');
         if (livingRoom) {
             state.rooms.push({
                 name: 'بالکن',
                 x: 0,
-                y: -1.5, // Protruding from the front
+                y: -1.5,
                 width: livingRoom.width / 2,
                 height: 1.5,
                 type: 'balcony'
             });
         }
         extractWallsFromRooms();
+        captureHistory();
         render();
     }
 
     function removeBalcony() {
         if(!state.hasBalcony) return;
-        captureHistory();
         state.hasBalcony = false;
         state.rooms = state.rooms.filter(r => r.type !== 'balcony');
         extractWallsFromRooms();
+        captureHistory();
         render();
     }
-
 
     function extractWallsFromRooms() {
         const wallSegments = new Set();
         const addWall = (x1, y1, x2, y2) => {
-            const key = [x1, y1, x2, y2].sort().join(',');
+            // Safely sort numbers to avoid coordinate mismatch
+            const key = [x1, y1, x2, y2].sort((a, b) => a - b).join(',');
             if (!wallSegments.has(key)) {
                 wallSegments.add(key);
                 state.walls.push({ x1, y1, x2, y2 });
@@ -160,43 +155,38 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         state.rooms.forEach(room => {
-            if (room.type === 'door' || room.type === 'balcony') return; // Don't draw walls for doors/balconies
+            if (room.type === 'door' || room.type === 'balcony') return; 
             const x1 = room.x;
             const y1 = room.y;
-            const x2 = room.x + room.width;
-            const y2 = room.y + room.height;
-            addWall(x1, y1, x2, y1); // Top
-            addWall(x2, y1, x2, y2); // Right
-            addWall(x1, y2, x2, y2); // Bottom
-            addWall(x1, y1, x1, y2); // Left
+            const x2 = room.x + (room.width || 0);
+            const y2 = room.y + (room.height || 0);
+            addWall(x1, y1, x2, y1); 
+            addWall(x2, y1, x2, y2); 
+            addWall(x1, y2, x2, y2); 
+            addWall(x1, y1, x1, y2); 
         });
     }
 
     function generateColumns() {
         state.columns = [];
-        const colSize = (state.structureType === 'concrete' ? 0.4 : 0.3); // meters
+        const colSize = (state.structureType === 'concrete' ? 0.4 : 0.3); 
         const gridX = [], gridY = [];
 
-        // Create a grid based on room corners
         state.rooms.forEach(room => {
             if(room.type !== 'door') {
-                gridX.push(room.x, room.x + room.width);
-                gridY.push(room.y, room.y + room.height);
+                gridX.push(room.x, room.x + (room.width || 0));
+                gridY.push(room.y, room.y + (room.height || 0));
             }
         });
 
-        // Add ground boundaries
         gridX.push(0, state.groundWidth);
         gridY.push(0, state.groundLength);
 
-        // Deduplicate and sort grid lines
         const uniqueX = [...new Set(gridX)].sort((a,b)=>a-b);
         const uniqueY = [...new Set(gridY)].sort((a,b)=>a-b);
 
-        // Place columns at intersections
         uniqueX.forEach(x => {
             uniqueY.forEach(y => {
-                // Check if point is on a wall
                 const isOnWall = state.walls.some(w =>
                     (w.x1 === x && w.x2 === x && y >= Math.min(w.y1, w.y2) && y <= Math.max(w.y1, w.y2)) ||
                     (w.y1 === y && w.y2 === y && x >= Math.min(w.x1, w.x2) && x <= Math.max(w.x1, w.x2))
@@ -210,9 +200,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function addRoom() {
-        captureHistory();
         state.rooms.push({ name: 'اتاق جدید', x: 1, y: 1, width: 4, height: 3, type: 'bedroom'});
         extractWallsFromRooms();
+        captureHistory();
         render();
     }
 
@@ -228,56 +218,75 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderSVG() {
-        svg.innerHTML = ''; // Clear SVG
+        // Safe clear (innerHTML not supported consistently for SVG)
+        while(svg.firstChild) {
+            svg.removeChild(svg.firstChild);
+        }
 
-        // Add definitions for markers etc.
+        // Safe Defs creation
         const defs = document.createElementNS(SVG_NS, 'defs');
-        defs.innerHTML = `<marker id="dim-tick" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="2" markerHeight="10" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="currentColor"/></marker>`;
+        const marker = document.createElementNS(SVG_NS, 'marker');
+        marker.setAttribute('id', 'dim-tick');
+        marker.setAttribute('viewBox', '0 0 10 10');
+        marker.setAttribute('refX', '0');
+        marker.setAttribute('refY', '5');
+        marker.setAttribute('markerWidth', '2');
+        marker.setAttribute('markerHeight', '10');
+        marker.setAttribute('orient', 'auto-start-reverse');
+        
+        const path = document.createElementNS(SVG_NS, 'path');
+        path.setAttribute('d', 'M 0 0 L 10 5 L 0 10');
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', 'currentColor');
+        
+        marker.appendChild(path);
+        defs.appendChild(marker);
         svg.appendChild(defs);
+
+        // Sanitize Pan and Zoom to prevent blank screen
+        if (isNaN(state.zoom) || state.zoom <= 0) state.zoom = 1;
+        if (isNaN(state.pan.x)) state.pan.x = 0;
+        if (isNaN(state.pan.y)) state.pan.y = 0;
 
         const g = document.createElementNS(SVG_NS, 'g');
         g.setAttribute('transform', `translate(${state.pan.x}, ${state.pan.y}) scale(${state.zoom})`);
         svg.appendChild(g);
 
-        // Render rooms, walls, doors, dimensions...
-        state.rooms.forEach(room => {
-            if (room.type === 'balcony') {
-                drawBalcony(g, room);
-            }
-             if (room.type === 'door') {
-                drawDoor(g, {x: room.x, y: room.y, width: room.width, wall: 'bottom'});
-            } else {
-                 // Room Label
-                const text = document.createElementNS(SVG_NS, 'text');
-                text.setAttribute('x', (room.x + room.width / 2) * RENDER_SCALE);
-                text.setAttribute('y', (room.y + room.height / 2) * RENDER_SCALE);
-                text.setAttribute('class', 'room-label');
-                text.textContent = room.name;
-                g.appendChild(text);
+        try {
+            (state.rooms || []).forEach(room => {
+                if (room.type === 'balcony') {
+                    drawBalcony(g, room);
+                } else if (room.type === 'door') {
+                    drawDoor(g, {x: room.x, y: room.y, width: room.width, wall: 'bottom'});
+                } else {
+                    const text = document.createElementNS(SVG_NS, 'text');
+                    text.setAttribute('x', (room.x + (room.width || 0) / 2) * RENDER_SCALE);
+                    text.setAttribute('y', (room.y + (room.height || 0) / 2) * RENDER_SCALE);
+                    text.setAttribute('class', 'room-label');
+                    text.textContent = room.name;
+                    g.appendChild(text);
 
-                // Dimensions
-                drawDimension(g, room.x, room.y - 0.5, room.x + room.width, room.y - 0.5, room.width);
-                drawDimension(g, room.x - 0.5, room.y, room.x - 0.5, room.y + room.height, room.height);
-            }
-        });
-        
-        state.walls.forEach(wall => drawWall(g, wall));
-        
-        state.columns.forEach(col => {
-            const rect = document.createElementNS(SVG_NS, 'rect');
-            rect.setAttribute('x', col.x * RENDER_SCALE);
-            rect.setAttribute('y', col.y * RENDER_SCALE);
-            rect.setAttribute('width', col.width * RENDER_SCALE);
-            rect.setAttribute('height', col.height * RENDER_SCALE);
-            rect.setAttribute('class', 'column');
-            g.appendChild(rect);
-        });
-
-        // Update viewBox to handle pan/zoom
-        updateViewBox();
+                    drawDimension(g, room.x, room.y - 0.5, room.x + (room.width||0), room.y - 0.5, room.width || 0);
+                    drawDimension(g, room.x - 0.5, room.y, room.x - 0.5, room.y + (room.height||0), room.height || 0);
+                }
+            });
+            
+            (state.walls || []).forEach(wall => drawWall(g, wall));
+            
+            (state.columns || []).forEach(col => {
+                const rect = document.createElementNS(SVG_NS, 'rect');
+                rect.setAttribute('x', col.x * RENDER_SCALE);
+                rect.setAttribute('y', col.y * RENDER_SCALE);
+                rect.setAttribute('width', col.width * RENDER_SCALE);
+                rect.setAttribute('height', col.height * RENDER_SCALE);
+                rect.setAttribute('class', 'column');
+                g.appendChild(rect);
+            });
+        } catch (e) {
+            console.error("Rendering Error:", e);
+        }
     }
 
-    // --- Drawing Helpers (SVG) ---
     function drawWall(parent, wall) {
         const line = document.createElementNS(SVG_NS, 'line');
         line.setAttribute('x1', wall.x1 * RENDER_SCALE);
@@ -303,40 +312,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const y = door.y * RENDER_SCALE;
         const width = door.width * RENDER_SCALE;
         
-        if (width <= 0) return; // Don't render zero-length door line
+        if (width <= 0) return;
 
-        // Create a gap in the wall
         const gap = document.createElementNS(SVG_NS, 'line');
         gap.setAttribute('x1', x);
         gap.setAttribute('y1', y);
         gap.setAttribute('x2', x + width);
         gap.setAttribute('y2', y);
-        gap.setAttribute('stroke', getComputedStyle(document.body).getPropertyValue('--card-background').trim());
-        gap.setAttribute('stroke-width', '10'); // Thicker than wall to create a clean gap
+        const bgColor = getComputedStyle(document.body).getPropertyValue('--card-background').trim() || '#ffffff';
+        gap.setAttribute('stroke', bgColor);
+        gap.setAttribute('stroke-width', '10'); 
         parent.appendChild(gap);
 
-        // Draw door swing arc
         const arc = document.createElementNS(SVG_NS, 'path');
-        const startX = x;
-        const startY = y;
-        const endX = x;
-        const endY = y - width; // Arc goes "inward"
-        // A rx ry x-axis-rotation large-arc-flag sweep-flag x y
-        const d = `M ${startX} ${startY} A ${width} ${width} 0 0 0 ${endX} ${endY}`;
+        const endY = y - width; 
+        const d = `M ${x} ${y} A ${width} ${width} 0 0 0 ${x} ${endY}`;
         arc.setAttribute('d', d);
         arc.setAttribute('class', 'door-arc');
         parent.appendChild(arc);
 
-        // Draw door panel
         const panel = document.createElementNS(SVG_NS, 'line');
-        panel.setAttribute('x1', startX);
-        panel.setAttribute('y1', startY);
-        panel.setAttribute('x2', endX);
+        panel.setAttribute('x1', x);
+        panel.setAttribute('y1', y);
+        panel.setAttribute('x2', x);
         panel.setAttribute('y2', endY);
-        panel.setAttribute('class', 'wall'); // Style as a wall for consistency
+        panel.setAttribute('class', 'wall'); 
         parent.appendChild(panel);
     }
-
 
     function drawDimension(parent, x1, y1, x2, y2, label) {
         const g = document.createElementNS(SVG_NS, 'g');
@@ -352,29 +354,16 @@ document.addEventListener('DOMContentLoaded', () => {
         text.setAttribute('x', ((x1 + x2) / 2) * RENDER_SCALE);
         text.setAttribute('y', ((y1 + y2) / 2 - 0.2) * RENDER_SCALE);
         text.setAttribute('class', 'dim-text');
-        text.textContent = label.toFixed(2) + 'm';
+        text.textContent = (Number(label) || 0).toFixed(2) + 'm';
         g.appendChild(text);
         parent.appendChild(g);
     }
     
-    function updateViewBox() {
-        const bbox = svg.getBBox();
-        const padding = 50;
-        const vb = {
-            x: bbox.x - padding,
-            y: bbox.y - padding,
-            w: bbox.width + padding * 2,
-            h: bbox.height + padding * 2
-        };
-        // This is a simplified viewBox setting. Pan/Zoom logic handles the transform directly.
-        // A full viewBox implementation would be more complex.
-    }
-
-
     // --- 3D Rendering ---
     function init3D() {
+        if (typeof THREE === 'undefined') return; 
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(getComputedStyle(document.body).getPropertyValue('--background-color').trim());
+        scene.background = new THREE.Color(getComputedStyle(document.body).getPropertyValue('--background-color').trim() || '#f4f7f9');
 
         camera = new THREE.PerspectiveCamera(75, threeContainer.clientWidth / threeContainer.clientHeight, 0.1, 1000);
         camera.position.set(state.groundWidth * 1.5, state.groundLength * 1.5, state.groundWidth * 1.5);
@@ -385,26 +374,25 @@ document.addEventListener('DOMContentLoaded', () => {
         renderer.shadowMap.enabled = true;
         threeContainer.appendChild(renderer.domElement);
 
-        // Basic lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
         directionalLight.position.set(50, 50, 50);
         directionalLight.castShadow = true;
         scene.add(directionalLight);
-
-        // Orbit controls would be added here if we had them
-        // For now, we use the same pan/zoom as SVG
     }
 
     function render3D() {
+        if (typeof THREE === 'undefined') {
+            alert("کتابخانه 3D هنوز بارگذاری نشده است. لطفاً اتصال اینترنت خود را بررسی کنید.");
+            return;
+        }
         if (!scene) init3D();
 
-        // Clear previous objects
         while (scene.children.length > 0) {
             scene.remove(scene.children[0]);
         }
-        // Re-add lights
+        
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -419,7 +407,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const slabMaterial = new THREE.MeshStandardMaterial({ color: 0xeeeeee });
         const columnMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
 
-        // Slabs (Floors)
         for (let i = 0; i < state.floors; i++) {
             const slabGeom = new THREE.BoxGeometry(state.groundWidth, slabThickness, state.groundLength);
             const slab = new THREE.Mesh(slabGeom, slabMaterial);
@@ -427,11 +414,9 @@ document.addEventListener('DOMContentLoaded', () => {
             scene.add(slab);
         }
 
-        // Walls
         for (let i = 0; i < state.floors; i++) {
-             // Only draw walls if it's not the last floor (roof) OR there's only one floor
             if (i < state.floors - 1 || state.floors === 1) {
-                state.walls.forEach(wall => {
+                (state.walls || []).forEach(wall => {
                     const length = Math.sqrt(Math.pow(wall.x2 - wall.x1, 2) + Math.pow(wall.y2 - wall.y1, 2));
                     const isHorizontal = Math.abs(wall.y1 - wall.y2) < 0.01;
                     const wallGeom = new THREE.BoxGeometry(
@@ -444,3 +429,322 @@ document.addEventListener('DOMContentLoaded', () => {
                         (wall.x1 + wall.x2) / 2,
                         wallHeight / 2 + i * wallHeight,
                         (wall.y1 + wall.y2) / 2
+                    );
+                    scene.add(mesh);
+                });
+            }
+        }
+        
+        (state.columns || []).forEach(col => {
+            const colHeight = state.floors * wallHeight;
+            const colGeom = new THREE.BoxGeometry(col.width, colHeight, col.height);
+            const mesh = new THREE.Mesh(colGeom, columnMaterial);
+            mesh.position.set(
+                col.x + col.width / 2,
+                colHeight / 2,
+                col.y + col.height / 2
+            );
+            scene.add(mesh);
+        });
+
+        renderer.render(scene, camera);
+    }
+    
+    // --- Pan, Zoom, and Tool Handling ---
+    function getMousePos(evt) {
+        const CTM = svg.getScreenCTM();
+        if(!CTM) return {x:0, y:0, x_m:0, y_m:0};
+        const pt = svg.createSVGPoint();
+        pt.x = evt.clientX;
+        pt.y = evt.clientY;
+        const transformedPt = pt.matrixTransform(CTM.inverse());
+        return {
+            x: transformedPt.x,
+            y: transformedPt.y,
+            x_m: (transformedPt.x / RENDER_SCALE), 
+            y_m: (transformedPt.y / RENDER_SCALE)  
+        };
+    }
+
+    function handleMouseDown(e) {
+        e.preventDefault();
+        const mousePos = getMousePos(e);
+
+        if (state.tool === 'pan') {
+            state.pan.active = true;
+            state.pan.start.x = e.clientX - state.pan.x;
+            state.pan.start.y = e.clientY - state.pan.y;
+            svg.style.cursor = 'grabbing';
+        } else if (state.tool === 'draw') {
+            state.drawing.active = true;
+            state.drawing.start = { x: mousePos.x_m, y: mousePos.y_m };
+            state.drawing.end = { x: mousePos.x_m, y: mousePos.y_m };
+            
+            if (!state.drawing.tempLine) {
+                 const g = svg.querySelector('g');
+                 if(g) {
+                     state.drawing.tempLine = document.createElementNS(SVG_NS, 'line');
+                     state.drawing.tempLine.setAttribute('class', 'temp-draw-line');
+                     g.appendChild(state.drawing.tempLine);
+                 }
+            }
+        }
+    }
+
+    function handleMouseMove(e) {
+        if (state.pan.active) {
+            state.pan.x = e.clientX - state.pan.start.x;
+            state.pan.y = e.clientY - state.pan.start.y;
+            const g = svg.querySelector('g');
+            if(g) g.setAttribute('transform', `translate(${state.pan.x}, ${state.pan.y}) scale(${state.zoom})`);
+        } else if (state.drawing.active) {
+             const mousePos = getMousePos(e);
+             state.drawing.end = { x: mousePos.x_m, y: mousePos.y_m };
+             
+             if(state.drawing.tempLine) {
+                 state.drawing.tempLine.setAttribute('x1', state.drawing.start.x * RENDER_SCALE);
+                 state.drawing.tempLine.setAttribute('y1', state.drawing.start.y * RENDER_SCALE);
+                 state.drawing.tempLine.setAttribute('x2', state.drawing.end.x * RENDER_SCALE);
+                 state.drawing.tempLine.setAttribute('y2', state.drawing.end.y * RENDER_SCALE);
+             }
+        }
+    }
+
+    function handleMouseUp(e) {
+        if (state.pan.active) {
+            state.pan.active = false;
+            svg.style.cursor = 'grab';
+        } else if (state.drawing.active) {
+            state.drawing.active = false;
+            
+             if(state.drawing.tempLine) {
+                 state.drawing.tempLine.remove();
+                 state.drawing.tempLine = null;
+             }
+             
+            const newWall = {
+                x1: state.drawing.start.x,
+                y1: state.drawing.start.y,
+                x2: state.drawing.end.x,
+                y2: state.drawing.end.y
+            };
+            
+            if (Math.abs(newWall.x1-newWall.x2) > 0.1 || Math.abs(newWall.y1-newWall.y2) > 0.1) {
+                 state.walls.push(newWall);
+                 captureHistory();
+                 render();
+            }
+        }
+    }
+    
+     function handleWheel(e) {
+        e.preventDefault();
+        const scaleAmount = 1.1;
+        const CTM = svg.getScreenCTM();
+        if(!CTM) return;
+        
+        const pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const mousePoint = pt.matrixTransform(CTM.inverse());
+
+        const oldZoom = state.zoom;
+        if (e.deltaY < 0) { 
+            state.zoom *= scaleAmount;
+        } else { 
+            state.zoom /= scaleAmount;
+        }
+        
+        state.zoom = Math.max(0.1, Math.min(state.zoom, 10)); 
+
+        state.pan.x = mousePoint.x - (mousePoint.x - state.pan.x) * (state.zoom / oldZoom);
+        state.pan.y = mousePoint.y - (mousePoint.y - state.pan.y) * (state.zoom / oldZoom);
+
+        const g = svg.querySelector('g');
+        if(g) g.setAttribute('transform', `translate(${state.pan.x}, ${state.pan.y}) scale(${state.zoom})`);
+    }
+
+    function switchTool(tool) {
+        state.tool = tool;
+        panToolBtn.classList.toggle('active', tool === 'pan');
+        drawToolBtn.classList.toggle('active', tool === 'draw');
+        svg.classList.toggle('drawing', tool === 'draw');
+        svg.style.cursor = tool === 'draw' ? 'crosshair' : 'grab';
+    }
+
+
+    // --- History Management (Undo/Redo) ---
+    function captureHistory() {
+        if (historyIndex < history.length - 1) {
+            history = history.slice(0, historyIndex + 1);
+        }
+
+        // Deep clone state safely (stripping DOM elements to avoid Circular JSON errors)
+        const safeState = {
+            ...state,
+            drawing: { active: false, start: {x:0, y:0}, end: {x:0, y:0}, tempLine: null } // strip tempLine
+        };
+        const stateSnapshot = JSON.parse(JSON.stringify(safeState));
+        
+        history.push(stateSnapshot);
+        historyIndex++;
+
+        if (history.length > 50) {
+            history.shift();
+            historyIndex--;
+        }
+        updateHistoryButtons();
+    }
+    
+    function applyHistoryState(snapshot) {
+        Object.assign(state, JSON.parse(JSON.stringify(snapshot)));
+        
+        groundWidthInput.value = state.groundWidth;
+        groundLengthInput.value = state.groundLength;
+        bedroomsInput.value = state.bedrooms;
+        floorsInput.value = state.floors;
+        structureTypeInput.value = state.structureType;
+        autoColumnsCheckbox.checked = state.autoColumns;
+        
+        render();
+    }
+
+    function undo() {
+        if (historyIndex > 0) {
+            historyIndex--;
+            applyHistoryState(history[historyIndex]);
+        }
+    }
+
+    function redo() {
+        if (historyIndex < history.length - 1) {
+            historyIndex++;
+             applyHistoryState(history[historyIndex]);
+        }
+    }
+    
+    function updateHistoryButtons() {
+        undoBtn.disabled = historyIndex <= 0;
+        redoBtn.disabled = historyIndex >= history.length - 1;
+    }
+
+
+    // --- I/O and Utility Functions ---
+    function exportSVG() {
+        const svgClone = svg.cloneNode(true);
+        const g = svgClone.querySelector('g');
+        if(g) g.setAttribute('transform', '');
+        
+        const bbox = svg.getBBox(); 
+        const padding = 20;
+        svgClone.setAttribute('viewBox', `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding*2} ${bbox.height + padding*2}`);
+        svgClone.setAttribute('width', bbox.width + padding*2);
+        svgClone.setAttribute('height', bbox.height + padding*2);
+        
+        svgClone.setAttribute("xmlns", SVG_NS);
+
+        const svgData = new XMLSerializer().serializeToString(svgClone);
+        const svgBlob = new Blob([`<?xml version="1.0" standalone="no"?>\r\n`, svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'floorplan.svg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function printPlan() {
+        window.print();
+    }
+    
+    function saveToLocalStorage() {
+        try {
+            // Strip DOM elements before saving
+            const safeState = { ...state, drawing: { active: false, start: {x:0, y:0}, end: {x:0, y:0}, tempLine: null } };
+            const dataToSave = {
+                currentState: safeState,
+                history: history,
+                historyIndex: historyIndex
+            };
+            localStorage.setItem('floorplanAppState', JSON.stringify(dataToSave));
+            alert('نقشه با موفقیت در حافظه مرورگر ذخیره شد.');
+        } catch (e) {
+            console.error("Failed to save to localStorage:", e);
+            alert('خطا در ذخیره‌سازی. ممکن است حافظه مرورگر پر باشد.');
+        }
+    }
+    
+    function loadFromLocalStorage(isManual = false) {
+        try {
+            const savedData = localStorage.getItem('floorplanAppState');
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                history = parsedData.history || [];
+                historyIndex = parsedData.historyIndex || -1;
+                
+                if (historyIndex >= 0 && history[historyIndex]) {
+                     applyHistoryState(history[historyIndex]);
+                } else if (parsedData.currentState) { 
+                    applyHistoryState(parsedData.currentState);
+                    history = [];
+                    historyIndex = -1;
+                    captureHistory(); 
+                }
+                
+                if (isManual) alert('نقشه ذخیره‌شده با موفقیت بازیابی شد.');
+                return true;
+            } else {
+                if (isManual) alert('هیچ نقشه ذخیره‌شده‌ای یافت نشد.');
+                return false;
+            }
+        } catch (e) {
+            console.error("Failed to load from localStorage:", e);
+            if (isManual) alert('خطا در بازیابی نقشه.');
+            return false;
+        }
+    }
+
+    // --- Event Listeners ---
+    generateBtn.addEventListener('click', () => {
+        // Clear saved broken states manually by regenerating
+        generateFloorplan();
+    });
+    addRoomBtn.addEventListener('click', addRoom);
+    addBalconyBtn.addEventListener('click', addBalcony);
+    removeBalconyBtn.addEventListener('click', removeBalcony);
+    exportSvgBtn.addEventListener('click', exportSVG);
+    printBtn.addEventListener('click', printPlan);
+    
+    panToolBtn.addEventListener('click', () => switchTool('pan'));
+    drawToolBtn.addEventListener('click', () => switchTool('draw'));
+    
+    undoBtn.addEventListener('click', undo);
+    redoBtn.addEventListener('click', redo);
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+            e.preventDefault();
+            undo();
+        }
+        if (e.ctrlKey && e.key.toLowerCase() === 'y') {
+            e.preventDefault();
+            redo();
+        }
+    });
+
+    saveStorageBtn.addEventListener('click', saveToLocalStorage);
+    loadStorageBtn.addEventListener('click', () => loadFromLocalStorage(true));
+
+    view2dBtn.addEventListener('click', () => {
+        view2dBtn.classList.add('active');
+        view3dBtn.classList.remove('active');
+        svg.style.display = 'block';
+        threeContainer.style.display = 'none';
+        render();
+    });
+
+    view3dBtn.addEventListener('click', () => {
+        view3dBtn.classList.add('active');
+        view2dBtn.classList.remove('active');
+        sv
