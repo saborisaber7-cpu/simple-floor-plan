@@ -6,7 +6,6 @@
   <meta name="color-scheme" content="light">
   <title>طراحی پلان و اسکلت سه‌بعدی ساختمان</title>
   <link rel="stylesheet" href="styles.css">
-  <!-- کتابخانه سبک Three.js و کنترل دوربین بدون نیاز به نصب پکیج -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
@@ -21,7 +20,6 @@
         </div>
       </div>
 
-      <!-- تب‌های تغییر دید: ۲بعدی و ۳بعدی -->
       <div class="mode-switch" role="tablist">
         <button type="button" class="mode-tab is-active" id="view2dBtn">📐 پلان ۲ بعدی</button>
         <button type="button" class="mode-tab" id="view3dBtn">🧊 اسکلت ۳ بعدی</button>
@@ -36,7 +34,6 @@
     </header>
 
     <main class="workspace">
-      <!-- پنل تنظیمات سمت راست -->
       <section class="panel control-panel">
         <div class="panel-head">
           <p class="eyebrow">مشخصات سازه و پلان</p>
@@ -61,7 +58,6 @@
             </select>
           </div>
 
-          <!-- تنظیمات مخصوص اسکلت و چندطبقه -->
           <div class="field highlight-box">
             <label>🏗 تعداد طبقات ساختمان:</label>
             <div class="slider-row">
@@ -102,7 +98,6 @@
           <button type="button" class="primary-btn full" id="generateBtn">به‌روزرسانی و ساخت نقشه</button>
         </div>
 
-        <!-- ابزارهای کمکی پلان -->
         <div class="quick-tools">
           <p class="eyebrow">ویرایش سریع</p>
           <div class="quick-grid">
@@ -112,7 +107,6 @@
         </div>
       </section>
 
-      <!-- پنل نمایش نقشه (۲ بعدی و ۳ بعدی) -->
       <section class="panel canvas-panel">
         <div class="canvas-header">
           <div class="canvas-title">
@@ -120,7 +114,6 @@
             <strong id="viewTitle">پلان دوبعدی معماری</strong>
           </div>
 
-          <!-- ابزارهای زوم دو بعدی -->
           <div class="zoom-toolbar" id="zoomControls2D">
             <button type="button" class="zoom-btn" id="zoomOutBtn">-</button>
             <span class="zoom-text" id="zoomLevelText">100%</span>
@@ -128,19 +121,17 @@
             <button type="button" class="zoom-btn reset" id="zoomResetBtn">۱۰۰٪</button>
           </div>
 
-          <!-- راهنمای چرخش ۳بعدی -->
           <div class="zoom-toolbar hidden" id="hint3D">
-            <small class="muted-text">🖱 کلیک چپ + درگ: چرخش ۳۶۰° | راست‌کلیک: جابجایی | اسکرول: زوم</small>
+            <small class="muted-text">🖱 درگ ماوس: چرخش ۳۶۰° | اسکرول: زوم</small>
             <button type="button" class="zoom-btn" id="resetCameraBtn">زاویه اولیه</button>
           </div>
         </div>
 
-        <!-- بوم ۲ بعدی (SVG) -->
         <div class="canvas-wrap" id="canvasWrap2D">
           <svg id="planSvg" viewBox="0 0 1200 800">
             <defs>
               <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="1"/>
+                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#grid)" />
@@ -152,7 +143,27 @@
           </svg>
         </div>
 
-        <!-- بوم ۳ بعدی (Three.js WebGL) -->
+        <div class="canvas-wrap hidden" id="canvasWrap3D"><small class="muted-text">🖱 درگ ماوس: چرخش ۳۶۰° | اسکرول: زوم</small>
+            <button type="button" class="zoom-btn" id="resetCameraBtn">زاویه اولیه</button>
+          </div>
+        </div>
+
+        <div class="canvas-wrap" id="canvasWrap2D">
+          <svg id="planSvg" viewBox="0 0 1200 800">
+            <defs>
+              <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+            <g id="viewportGroup" transform="scale(1)">
+              <g id="roomsGroup"></g>
+              <g id="furnitureGroup"></g>
+              <g id="columnsGroup"></g>
+            </g>
+          </svg>
+        </div>
+
         <div class="canvas-wrap hidden" id="canvasWrap3D">
           <div id="threeContainer"></div>
         </div>
